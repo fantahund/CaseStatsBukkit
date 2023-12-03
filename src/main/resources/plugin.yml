@@ -1,0 +1,7 @@
+name: CaseStatsBukkit
+version: '${project.version}'
+main: de.fanta.casestatsbukkit.CaseStatsBukkit
+api-version: '1.20'
+depend: [GlobalClient, CubesideUtils, GlobalPort, CubesideNMSUtils]
+commands:
+  casestats:
