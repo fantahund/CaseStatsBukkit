@@ -1,11 +1,11 @@
 package de.fanta.casestatsbukkit;
 
 import de.cubeside.nmsutils.NMSUtils;
+import de.fanta.casestatsbukkit.commands.CaseDeleteCommand;
 import de.fanta.casestatsbukkit.commands.CaseEditCommand;
 import de.fanta.casestatsbukkit.commands.CaseStatsLoginCommand;
 import de.fanta.casestatsbukkit.data.CaseStatsBukkitConfig;
 import de.fanta.casestatsbukkit.data.Database;
-import de.fanta.casestatsbukkit.utils.guiutils.WindowManager;
 import de.iani.cubesideutils.bukkit.commands.CommandRouter;
 import de.iani.playerUUIDCache.PlayerUUIDCache;
 import org.bukkit.Bukkit;
@@ -42,11 +42,10 @@ public final class CaseStatsBukkit extends JavaPlugin {
 
         this.database = new Database(caseStatsConfig.getSQLConfig(), this);
 
-        CommandRouter router = new CommandRouter(getCommand("casestats"));
+        CommandRouter router = new CommandRouter(this.getCommand("casestats"));
         router.addCommandMapping(new CaseStatsLoginCommand(this), "login");
         router.addCommandMapping(new CaseEditCommand(this), "editCase");
-
-        getServer().getPluginManager().registerEvents(new WindowManager(), this);
+        router.addCommandMapping(new CaseDeleteCommand(this), "delete");
     }
 
     @Override

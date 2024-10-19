@@ -1,12 +1,13 @@
 package de.fanta.casestatsbukkit.data;
 
+import de.cubeside.nmsutils.nbt.CompoundTag;
 import de.fanta.casestatsbukkit.CaseStatsBukkit;
+import de.fanta.casestatsbukkit.utils.ItemUtils;
 import de.iani.cubesideutils.sql.MySQLConnection;
 import de.iani.cubesideutils.sql.SQLConfig;
 import de.iani.cubesideutils.sql.SQLConnection;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.sql.PreparedStatement;
@@ -14,6 +15,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,6 +35,8 @@ public class Database {
     private final String insertCase2CaseItemQuery;
     private final String selectCaseItemIdQuery;
     private final String selectCase2CaseItemQuery;
+    private final String selectPlayerCaseStats;
+    private final String deleteCaseQuary;
 
     public Database(SQLConfig config, CaseStatsBukkit plugin) {
         this.config = config;
@@ -45,24 +50,19 @@ public class Database {
             throw new RuntimeException("Could not initialize database", ex);
         }
 
-        insertCaseQuery = "INSERT INTO " + config.getTablePrefix() + "_cases(id, item, itemNBT) VALUE (?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, item = ?, itemNBT = ?";
+        this.insertCaseQuery = "INSERT INTO " + config.getTablePrefix() + "_cases(id, item, itemNBT, nbtVersion) VALUE (?, ?, ?, ?) ON DUPLICATE KEY UPDATE id = ?, item = ?, itemNBT = ?, nbtVersion = ?";
+        this.selectCaseItemIdQuery = "SELECT id FROM " + config.getTablePrefix() + "_case_items WHERE item = ? AND amount = ? AND itemNBT = ?";
+        this.insertCaseItemQuery = "INSERT INTO " + config.getTablePrefix() + "_case_items(item, amount, itemNBT, nbtVersion) VALUE (?, ?, ?, ?)";
+        this.selectCase2CaseItemQuery = "SELECT id FROM " + config.getTablePrefix() + "_case2caseitems WHERE caseId = ? AND caseItemId = ?";
+        this.insertCase2CaseItemQuery = "INSERT INTO " + config.getTablePrefix() + "_case2caseitems(caseId, caseItemId) VALUE (?, ?)";
+        this.insertPlayerStatQuery = "INSERT INTO " + config.getTablePrefix() + "_player_stats(uuid, case2caseitemId, timestamp) VALUE (?, ?, ?)";
+        this.selectCasesQuery = "SELECT * FROM " + config.getTablePrefix() + "_cases";
 
-        selectCaseItemIdQuery = "SELECT id FROM " + config.getTablePrefix() + "_case_items WHERE item = ? AND amount = ? AND itemNBT = ?";
-        insertCaseItemQuery = "INSERT INTO " + config.getTablePrefix() + "_case_items(item, amount, itemNBT) VALUE (?, ?, ?)";
-
-        selectCase2CaseItemQuery = "SELECT id FROM " + config.getTablePrefix() + "_case2caseitems WHERE caseId = ? AND caseItemId = ?";
-        insertCase2CaseItemQuery = "INSERT INTO " + config.getTablePrefix() + "_case2caseitems(caseId, caseItemId) VALUE (?, ?)";
-
-        insertPlayerStatQuery = "INSERT INTO " + config.getTablePrefix() + "_player_stats(uuid, case2caseitemId, timestamp) VALUE (?, ?, ?)";
-
-        selectCasesQuery = "SELECT * FROM " + config.getTablePrefix() + "_cases";
-
-        selectCaseItemsQuery = "SELECT " + config.getTablePrefix()  + "_case_items.id itemId, " + config.getTablePrefix() + "_case_items.item item, " + config.getTablePrefix() + "_case_items.amount amount, " + config.getTablePrefix() + "_case_items.itemNBT itemNBT FROM " + config.getTablePrefix() + "_case2caseitems INNER JOIN " + config.getTablePrefix() + "_case_items ON " + config.getTablePrefix() + "_case_items.id=" + config.getTablePrefix() + "_case2caseitems.caseItemId WHERE " + config.getTablePrefix() + "_case2caseitems.caseId = ?";
-
-        deleteCaseItemQuary = "DELETE FROM " + config.getTablePrefix() + "_case_items" + " WHERE `id` = ?";
-        updateCaseItemQuary = "UPDATE " + config.getTablePrefix() + "_case_items" + " SET `caseId`= ?,`item`= ?,`amount`= ?,`itemNBT`= ? WHERE `id` = ?";
-
-        //GIB ALLE CASES// GIB 1 CASE für List<UUID> (TIME VON - BIS)
+        this.selectCaseItemsQuery = "SELECT " + config.getTablePrefix() + "_case_items.id itemId, " + config.getTablePrefix() + "_case_items.item item, " + config.getTablePrefix() + "_case_items.amount amount, " + config.getTablePrefix() + "_case_items.itemNBT itemNBT FROM " + config.getTablePrefix() + "_case2caseitems INNER JOIN " + config.getTablePrefix() + "_case_items ON " + config.getTablePrefix() + "_case_items.id=" + config.getTablePrefix() + "_case2caseitems.caseItemId WHERE " + config.getTablePrefix() + "_case2caseitems.caseId = ?";
+        this.selectPlayerCaseStats = "SELECT casestats_player_stats.uuid UUID, casestats_case_items.id itemId, casestats_case_items.item, casestats_case_items.amount amount, casestats_case_items.itemNBT itemNBT, casestats_case_items.nbtVersion nbtVersion, count(casestats_case2caseitems.caseItemId) itemCount FROM casestats_player_stats INNER JOIN casestats_case2caseitems ON case2caseitemId=casestats_case2caseitems.id INNER JOIN casestats_case_items ON casestats_case2caseitems.caseItemId = casestats_case_items.id WHERE casestats_case2caseitems.caseId = ? AND uuid IN (%s) GROUP BY UUID, casestats_case2caseitems.caseItemId";
+        this.deleteCaseItemQuary = "DELETE FROM " + config.getTablePrefix() + "_case_items WHERE `id` = ?";
+        this.updateCaseItemQuary = "UPDATE " + config.getTablePrefix() + "_case_items SET `item`= ?,`amount`= ?,`itemNBT`= ? WHERE `id` = ?";
+        this.deleteCaseQuary = "DELETE FROM " + config.getTablePrefix() + "_cases WHERE `id` = ?";
     }
 
     private void createTablesIfNotExist() throws SQLException {
@@ -72,6 +72,7 @@ public class Database {
                     "`id` VARCHAR(255)," +
                     "`item` TINYTEXT," +
                     "`itemNBT` LONGTEXT," +
+                    "`nbtVersion` INT," +
                     "PRIMARY KEY (id)" +
                     ")"
             );
@@ -80,7 +81,8 @@ public class Database {
                     "`item` TINYTEXT," +
                     "`amount` INT," +
                     "`itemNBT` LONGTEXT," +
-                    "CONSTRAINT item_identifier UNIQUE (item, amount, itemNBT)," +
+                    "`nbtVersion` INT," +
+                    "CONSTRAINT item_identifier UNIQUE (item, amount, itemNBT, nbtVersion)," +
                     "PRIMARY KEY (id)" +
                     ")"
             );
@@ -112,10 +114,12 @@ public class Database {
             smt.setString(1, caseId);
             smt.setString(2, item);
             smt.setString(3, itemNBT);
+            smt.setInt(4, plugin.getNmsUtils().getNbtUtils().getCurrentDataVersion());
 
-            smt.setString(4, caseId);
-            smt.setString(5, item);
-            smt.setString(6, itemNBT);
+            smt.setString(5, caseId);
+            smt.setString(6, item);
+            smt.setString(7, itemNBT);
+            smt.setInt(8, plugin.getNmsUtils().getNbtUtils().getCurrentDataVersion());
 
             smt.executeUpdate();
             return null;
@@ -133,6 +137,7 @@ public class Database {
             smt.setString(1, item);
             smt.setInt(2, amount);
             smt.setString(3, itemNBT);
+            smt.setInt(4, plugin.getNmsUtils().getNbtUtils().getCurrentDataVersion());
             smt.executeUpdate();
             ResultSet rs = smt.getGeneratedKeys();
             return rs.next() ? rs.getInt(1) : 0;
@@ -194,10 +199,8 @@ public class Database {
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 String id = rs.getString("id");
-                String item = rs.getString("item");
                 String itemNBT = rs.getString("itemNBT");
-                ItemStack stack = new ItemStack(Material.matchMaterial(item), 1);
-                plugin.getServer().getUnsafe().modifyItemStack(stack, itemNBT);
+                ItemStack stack = ItemUtils.getItemStackFromBase64(itemNBT);
                 CaseStat caseStat = new CaseStat(id, stack);
                 caseStats.add(caseStat);
             }
@@ -213,11 +216,8 @@ public class Database {
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 int id = rs.getInt("itemId");
-                String item = rs.getString("item");
-                int amount = rs.getInt("amount");
                 String itemNBT = rs.getString("itemNBT");
-                ItemStack stack = new ItemStack(Material.matchMaterial(item), amount);
-                plugin.getServer().getUnsafe().modifyItemStack(stack, itemNBT);
+                ItemStack stack = ItemUtils.getItemStackFromBase64(itemNBT);
                 CaseItemsStat caseItemsStat = new CaseItemsStat(id, caseID, stack);
                 caseStats.add(caseItemsStat);
             }
@@ -247,4 +247,50 @@ public class Database {
             return null;
         });
     }
+
+    public ArrayList<PlayerCaseItemStat> getPlayerCaseStats(String caseId, List<String> players) throws SQLException {
+        return this.connection.runCommands((connection, sqlConnection) -> {
+            ArrayList<PlayerCaseItemStat> playerCaseItemStats = new ArrayList<>();
+            String qs = "?,".repeat(players.size());
+            qs = qs.substring(0, qs.length() - 1);
+            PreparedStatement statement = sqlConnection.getOrCreateStatement(String.format(selectPlayerCaseStats, qs));
+            statement.setString(1, caseId);
+            int i = 2;
+
+            String uuid;
+
+            for (String uuidString : players) {
+                statement.setString(i, uuidString);
+                i++;
+            }
+
+            ResultSet rs = statement.executeQuery();
+
+            while (rs.next()) {
+                uuid = rs.getString("UUID");
+                String itemId = rs.getString("itemId");
+                String item = rs.getString("item");
+                String itemNBT = rs.getString("itemNBT");
+                int amount = rs.getInt("amount");
+                int count = rs.getInt("itemCount");
+
+                PlayerCaseItemStat stat = new PlayerCaseItemStat(uuid, itemId, item, itemNBT, amount, count);
+                playerCaseItemStats.add(stat);
+            }
+
+            return playerCaseItemStats;
+        });
+    }
+
+
+    public void deleteCase(CaseStat caseStat) throws SQLException {
+        this.connection.runCommands((connection, sqlConnection) -> {
+            PreparedStatement smt = sqlConnection.getOrCreateStatement(this.deleteCaseQuary);
+            smt.setString(1, caseStat.id());
+            smt.executeUpdate();
+            return null;
+        });
+    }
+
+
 }

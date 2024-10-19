@@ -5,7 +5,7 @@ import de.fanta.casestatsbukkit.data.CaseItemsStat;
 import de.fanta.casestatsbukkit.data.CaseStat;
 import de.fanta.casestatsbukkit.utils.ChatUtil;
 import de.fanta.casestatsbukkit.utils.CustomHeadsUtil;
-import de.fanta.casestatsbukkit.utils.guiutils.AbstractWindow;
+import de.iani.cubesideutils.bukkit.inventory.AbstractWindow;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

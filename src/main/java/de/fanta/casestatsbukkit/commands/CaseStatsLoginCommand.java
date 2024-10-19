@@ -42,6 +42,6 @@ public class CaseStatsLoginCommand extends SubCommand {
     }
 
     public boolean isListeningToCaseStatsChannel(Player player) {
-        return player.getListeningPluginChannels().contains(CaseStatsGlobalDataHelper.CLIENT_CHANNEL);
+        return player.getListeningPluginChannels().contains(CaseStatsGlobalDataHelper.LOGIN_CLIENT_CHANNEL);
     }
 }

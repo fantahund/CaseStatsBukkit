@@ -3,8 +3,8 @@ package de.fanta.casestatsbukkit.guis;
 import de.fanta.casestatsbukkit.CaseStatsBukkit;
 import de.fanta.casestatsbukkit.data.CaseItemsStat;
 import de.fanta.casestatsbukkit.utils.ChatUtil;
-import de.fanta.casestatsbukkit.utils.guiutils.AbstractWindow;
-import de.fanta.casestatsbukkit.utils.guiutils.GUIUtils;
+import de.fanta.casestatsbukkit.utils.ItemUtils;
+import de.iani.cubesideutils.bukkit.inventory.AbstractWindow;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -41,11 +41,11 @@ public class CaseItemDeleteGui extends AbstractWindow {
             ItemStack stack = playerCaseItemStatList.get(getPlayer().getUniqueId()).item();
             switch (i) {
                 case YES_INDEX ->
-                        item = GUIUtils.createGuiItem(Material.LIME_CONCRETE, ChatUtil.GREEN + "Yes", false);
+                        item = ItemUtils.createGuiItem(Material.LIME_CONCRETE, ChatUtil.GREEN + "Yes", false);
                 case ITEM_INDEX -> item = stack;
                 case NO_INDEX ->
-                        item = GUIUtils.createGuiItem(Material.RED_CONCRETE, ChatUtil.RED + "No", false);
-                default -> item = GUIUtils.EMPTY_ICON;
+                        item = ItemUtils.createGuiItem(Material.RED_CONCRETE, ChatUtil.RED + "No", false);
+                default -> item = ItemUtils.EMPTY_ICON;
             }
             this.getInventory().setItem(i, item);
         }

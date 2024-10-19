@@ -4,8 +4,8 @@ import de.fanta.casestatsbukkit.CaseStatsBukkit;
 import de.fanta.casestatsbukkit.data.CaseItemsStat;
 import de.fanta.casestatsbukkit.utils.ChatUtil;
 import de.fanta.casestatsbukkit.utils.CustomHeadsUtil;
-import de.fanta.casestatsbukkit.utils.guiutils.AbstractWindow;
-import de.fanta.casestatsbukkit.utils.guiutils.GUIUtils;
+import de.fanta.casestatsbukkit.utils.ItemUtils;
+import de.iani.cubesideutils.bukkit.inventory.AbstractWindow;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -16,7 +16,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -109,11 +108,11 @@ public class CaseItemEditGui extends AbstractWindow {
         for (int i = 0; i < INVENTORY_SIZE; i++) {
             ItemStack item;
             switch (i) {
-                case YES_INDEX -> item = GUIUtils.createGuiItem(Material.LIME_CONCRETE, ChatUtil.GREEN + "Yes", false);
+                case YES_INDEX -> item = ItemUtils.createGuiItem(Material.LIME_CONCRETE, ChatUtil.GREEN + "Yes", false);
                 case CURRENT_ITEM_INDEX -> item = playerCaseItemStatList.get(getPlayer().getUniqueId()).item();
                 case ARROW_RIGHT_INDEX -> item = CustomHeadsUtil.RAINBOW_ARROW_RIGHT.getHead(ChatUtil.RED + "Aktuelles Item überschreiben.");
                 case ITEM_INDEX -> item = new ItemStack(Material.AIR);
-                default -> item = GUIUtils.EMPTY_ICON;
+                default -> item = ItemUtils.EMPTY_ICON;
             }
             this.getInventory().setItem(i, item);
         }
