@@ -33,7 +33,7 @@ public class CaseItemsGui extends AbstractWindow {
     private static final HashMap<UUID, List<CaseItemsStat>> caseItemStatListByPlayer = new HashMap<>();
 
     public CaseItemsGui(List<CaseItemsStat> caseStatList, String caseID, Player player) {
-        super(player, Bukkit.createInventory(player, WINDOW_SIZE, ChatUtil.GREEN + "Case: " + ChatUtil.BLUE +  StringUtil.capitalizeFirstLetter(caseID, false)));
+        super(player, Bukkit.createInventory(player, WINDOW_SIZE, ChatUtil.GREEN + "Case: " + ChatUtil.BLUE + StringUtil.capitalizeFirstLetter(caseID, false)));
         caseItemStatListByPlayer.put(player.getUniqueId(), caseStatList);
         this.numOfItemRows = (int) (Math.ceil(caseStatList.size() / (double) NUM_OF_ITEM_COLUMNS));
         this.scrollAmount = 0;
@@ -126,7 +126,12 @@ public class CaseItemsGui extends AbstractWindow {
         CaseItemsStat caseItemsStat = caseItemStatListByPlayer.get(p.getUniqueId()).get(caseStatsIndex);
         if (caseItemsStat != null) {
             if (event.isLeftClick()) {
-                new CaseItemEditGui(caseItemsStat, getPlayer()).open();
+                if (event.isShiftClick()) {
+                    getPlayer().getInventory().addItem(caseItemsStat.item());
+                    ChatUtil.sendNormalMessage(getPlayer(), "ItemID: " + caseItemsStat.id() + " aus case: " + caseItemsStat.caseId() + " gegeben!");
+                } else {
+                    new CaseItemEditGui(caseItemsStat, getPlayer()).open();
+                }
             } else if (event.isRightClick()) {
                 new CaseItemDeleteGui(p, caseItemsStat).open();
             }
